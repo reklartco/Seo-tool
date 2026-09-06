@@ -1,0 +1,72 @@
+<?php
+
+use App\Livewire\Dashboard;
+use App\Livewire\Issues\Index as IssuesIndex;
+use App\Livewire\Keywords\Index as KeywordsIndex;
+use App\Livewire\Projects\Create as ProjectCreate;
+use App\Models\Project;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
+
+Route::view('/', 'welcome');
+
+Route::middleware(['auth', 'verified', 'team'])->group(function () {
+    Route::get('dashboard', Dashboard::class)->name('dashboard');
+
+    Route::get('projeler/yeni', ProjectCreate::class)->name('projects.create');
+
+    Route::get('projeler/{project}/gecis', function (Project $project, Request $request) {
+        abort_unless($project->team_id === $request->user()->current_team_id, 403);
+
+        session(['current_project_id' => $project->id]);
+
+        return redirect()->route('dashboard');
+    })->name('projects.switch');
+
+    Route::get('hatalar', IssuesIndex::class)->name('issues');
+    Route::get('anahtar-kelimeler', KeywordsIndex::class)->name('keywords');
+
+    // Screens landing in later sprints (spec §10).
+    Route::view('sayfalar', 'placeholder', [
+        'title' => 'Sayfalar',
+        'description' => 'Taranan sayfa listesi Sprint 1 ile birlikte gelir.',
+    ])->name('pages');
+
+    Route::view('tarama-gecmisi', 'placeholder', [
+        'title' => 'Tarama Geçmişi',
+        'description' => 'Tarama koşuları ve karşılaştırmaları Sprint 1 ile birlikte gelir.',
+    ])->name('crawls');
+
+    Route::view('search-console', 'placeholder', [
+        'title' => 'Search Console',
+        'description' => 'Google Search Console bağlantısı Sprint 3 ile birlikte gelir.',
+    ])->name('search-console');
+
+    Route::view('duzeltmeler', 'placeholder', [
+        'title' => 'Düzeltmeler',
+        'description' => 'AI düzeltme akışı Sprint 4 ile birlikte gelir.',
+    ])->name('fixes');
+
+    Route::view('entegrasyonlar', 'placeholder', [
+        'title' => 'Entegrasyonlar',
+        'description' => 'WordPress ve Search Console bağlantıları Sprint 3-4 ile birlikte gelir.',
+    ])->name('integrations');
+
+    Route::view('proje-ayarlari', 'placeholder', [
+        'title' => 'Proje Ayarları',
+        'description' => 'Proje düzenleme ekranı Sprint 1 ile birlikte gelir.',
+    ])->name('project-settings');
+});
+
+Route::view('profile', 'profile')->middleware(['auth'])->name('profile');
+
+Route::post('logout', function (Request $request) {
+    Auth::guard('web')->logout();
+    $request->session()->invalidate();
+    $request->session()->regenerateToken();
+
+    return redirect('/');
+})->middleware('auth')->name('logout');
+
+require __DIR__.'/auth.php';

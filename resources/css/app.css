@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    body {
+        @apply bg-canvas text-ink antialiased;
+    }
+}
+
+@layer components {
+    .card {
+        @apply rounded-xl2 border border-line bg-surface shadow-card;
+    }
+
+    .card-pad {
+        @apply p-5;
+    }
+
+    .stat-label {
+        @apply text-xs font-medium uppercase tracking-wide text-ink-faint;
+    }
+
+    .chip {
+        @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium;
+    }
+
+    .chip-neutral {
+        @apply chip bg-canvas text-ink-muted ring-1 ring-inset ring-line;
+    }
+
+    .chip-up {
+        @apply chip bg-up/10 text-up;
+    }
+
+    .chip-down {
+        @apply chip bg-down/10 text-down;
+    }
+
+    .chip-brand {
+        @apply chip bg-brand-50 text-brand-600;
+    }
+
+    .btn {
+        @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2;
+    }
+
+    .btn-primary {
+        @apply btn bg-brand-500 text-white hover:bg-brand-600;
+    }
+
+    .btn-ghost {
+        @apply btn border border-line bg-surface text-ink-muted hover:bg-canvas hover:text-ink;
+    }
+
+    .nav-item {
+        @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-ink-muted transition hover:bg-canvas hover:text-ink;
+    }
+
+    .nav-item-active {
+        @apply bg-brand-50 text-brand-700 hover:bg-brand-50 hover:text-brand-700;
+    }
+
+    .field {
+        @apply w-full rounded-lg border-line bg-surface text-sm text-ink shadow-sm placeholder:text-ink-faint focus:border-brand-400 focus:ring-brand-400;
+    }
+}
