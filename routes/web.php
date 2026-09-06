@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\PluginDownloadController;
 use App\Http\Controllers\SearchConsoleController;
+use App\Livewire\Admin\Dashboard as AdminDashboard;
 use App\Livewire\Crawls\Index as CrawlsIndex;
 use App\Livewire\Dashboard;
 use App\Livewire\Fixes\Index as FixesIndex;
@@ -49,6 +50,8 @@ Route::middleware(['auth', 'verified', 'team'])->group(function () {
     Route::get('entegrasyonlar', IntegrationsIndex::class)->name('integrations');
     Route::get('entegrasyonlar/eklenti', PluginDownloadController::class)->name('integrations.plugin');
     Route::get('proje-ayarlari', ProjectSettings::class)->name('project-settings');
+
+    Route::get('admin', AdminDashboard::class)->middleware('super-admin')->name('admin');
 });
 
 Route::view('profile', 'profile')->middleware(['auth'])->name('profile');

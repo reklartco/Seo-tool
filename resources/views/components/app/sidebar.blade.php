@@ -71,6 +71,13 @@
             @endforelse
         </div>
 
+        @if (auth()->user()?->is_super_admin)
+            <a href="{{ route('admin') }}" wire:navigate
+               class="nav-item mt-3 text-[13px] {{ request()->routeIs('admin') ? 'nav-item-active' : '' }}">
+                <x-app.icon name="cog" class="h-4 w-4" /> Admin
+            </a>
+        @endif
+
         @if ($team?->plan)
             <div class="mt-4 rounded-lg bg-canvas px-3 py-2.5">
                 <p class="text-xs font-medium text-ink">Plan: {{ $team->plan->name }}</p>

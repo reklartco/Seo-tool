@@ -14,6 +14,18 @@ class Project extends Model
 
     protected $guarded = [];
 
+    protected $attributes = [
+        'protocol' => 'https',
+        'language' => 'tr',
+        'country' => 'TR',
+        'cms' => 'custom',
+        'crawl_frequency' => 'weekly',
+        'max_pages' => 500,
+        'health_score_delta' => 0,
+        'auto_apply_fixes' => false,
+        'daily_fix_limit' => 0,
+    ];
+
     protected function casts(): array
     {
         return [

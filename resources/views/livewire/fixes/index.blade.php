@@ -77,11 +77,11 @@
                             <div>
                                 <p class="stat-label">Yeni</p>
                                 @if ($fix->status === 'draft')
-                                    <input type="text"
-                                           wire:model="edited.{{ $fix->id }}"
-                                           value="{{ $fix->new_value }}"
+                                    <input type="text" wire:model.live.debounce.500ms="edited.{{ $fix->id }}"
                                            class="field mt-1 text-sm">
-                                    <p class="mt-1 text-[11px] text-ink-faint">{{ mb_strlen($fix->new_value ?? '') }} karakter</p>
+                                    <p class="mt-1 text-[11px] text-ink-faint">
+                                        {{ mb_strlen($edited[$fix->id] ?? $fix->new_value ?? '') }} karakter
+                                    </p>
                                 @else
                                     <p class="mt-1 text-sm">{{ $fix->new_value ?: '—' }}</p>
                                 @endif

@@ -2,6 +2,7 @@
 
 use App\Livewire\Projects\Create;
 use App\Models\Project;
+use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
 
 it('redirects guests away from the dashboard', function () {
@@ -15,20 +16,32 @@ it('shows the dashboard to a signed in user', function () {
         ->assertSee('Genel Bakış');
 });
 
-it('creates a project through the wizard', function () {
-    $user = memberOfTeam();
+it('creates a project through the three step wizard', function () {
+    Queue::fake();
 
-    Livewire::actingAs($user)
+    $user = memberOfTeam(['max_keywords' => 10]);
+
+    $component = Livewire::actingAs($user)
         ->test(Create::class)
         ->set('domain', 'https://www.1etiket.com.tr/etiket')
         ->set('name', '1etiket')
-        ->call('save')
+        ->call('saveSite')
         ->assertHasNoErrors()
+        ->assertSet('step', 2);
+
+    $project = Project::where('team_id', $user->current_team_id)->first();
+
+    expect($project)->domain->toBe('1etiket.com.tr')->language->toBe('tr');
+
+    $component
+        ->set('keywords', "etiket baskı\nsticker baskı")
+        ->call('saveKeywords')
+        ->assertSet('step', 3)
+        ->set('startCrawl', false)
+        ->call('finish')
         ->assertRedirect(route('dashboard'));
 
-    expect(Project::where('team_id', $user->current_team_id)->first())
-        ->domain->toBe('1etiket.com.tr')
-        ->language->toBe('tr');
+    expect($project->keywords()->pluck('keyword')->all())->toBe(['etiket baskı', 'sticker baskı']);
 });
 
 it('rejects a domain that is already tracked by the team', function () {
@@ -39,7 +52,7 @@ it('rejects a domain that is already tracked by the team', function () {
         ->test(Create::class)
         ->set('domain', 'ornek.com')
         ->set('name', 'Örnek')
-        ->call('save')
+        ->call('saveSite')
         ->assertHasErrors('domain');
 });
 
@@ -51,7 +64,7 @@ it('blocks a project once the plan limit is reached', function () {
         ->test(Create::class)
         ->set('domain', 'ikinci.com')
         ->set('name', 'İkinci')
-        ->call('save')
+        ->call('saveSite')
         ->assertHasErrors('domain');
 
     expect(Project::where('team_id', $user->current_team_id)->count())->toBe(1);

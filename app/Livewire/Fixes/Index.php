@@ -142,8 +142,15 @@ class Index extends Component
 
     public function render()
     {
+        $fixes = $this->fixes();
+
+        // Seed the editable inputs once so drafts show the suggested value.
+        foreach ($fixes as $fix) {
+            $this->edited[$fix->id] ??= (string) $fix->new_value;
+        }
+
         return view('livewire.fixes.index', [
-            'fixes' => $this->fixes(),
+            'fixes' => $fixes,
             'groups' => $this->fixableGroups(),
             'appliedToday' => $this->project
                 ? $this->fixQuery()->where('status', 'applied')->whereDate('applied_at', today())->count()

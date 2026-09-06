@@ -1,10 +1,28 @@
 <div class="mx-auto max-w-2xl">
     <div class="mb-5">
         <h1 class="text-xl font-semibold tracking-tight">Yeni Proje</h1>
-        <p class="mt-1 text-sm text-ink-muted">Alan adını ekle, sonraki adımlarda anahtar kelime ve entegrasyonları bağlarız.</p>
+        <p class="mt-1 text-sm text-ink-muted">Üç adımda kurulum: site, anahtar kelimeler, entegrasyonlar.</p>
     </div>
 
-    <form wire:submit="save" class="card card-pad space-y-5">
+    <ol class="mb-5 flex items-center gap-2">
+        @foreach (['Site', 'Anahtar kelimeler', 'Entegrasyonlar'] as $index => $label)
+            @php $number = $index + 1; @endphp
+            <li class="flex flex-1 items-center gap-2">
+                <span @class([
+                    'grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-semibold',
+                    'bg-brand-500 text-white' => $step >= $number,
+                    'bg-canvas text-ink-faint ring-1 ring-line' => $step < $number,
+                ])>{{ $number }}</span>
+                <span class="truncate text-xs font-medium {{ $step >= $number ? 'text-ink' : 'text-ink-faint' }}">{{ $label }}</span>
+                @if ($number < 3)
+                    <span class="h-px flex-1 {{ $step > $number ? 'bg-brand-300' : 'bg-line' }}"></span>
+                @endif
+            </li>
+        @endforeach
+    </ol>
+
+    @if ($step === 1)
+    <form wire:submit="saveSite" class="card card-pad space-y-5">
         <div>
             <label for="domain" class="block text-sm font-medium">Alan adı</label>
             <div class="mt-1.5 flex gap-2">
@@ -71,9 +89,66 @@
         <div class="flex items-center justify-end gap-2 border-t border-line pt-4">
             <a href="{{ route('dashboard') }}" wire:navigate class="btn-ghost">Vazgeç</a>
             <button type="submit" class="btn-primary" wire:loading.attr="disabled">
-                <span wire:loading.remove wire:target="save">Projeyi oluştur</span>
-                <span wire:loading wire:target="save">Oluşturuluyor…</span>
+                <span wire:loading.remove wire:target="saveSite">Devam et</span>
+                <span wire:loading wire:target="saveSite">Kaydediliyor…</span>
             </button>
         </div>
     </form>
+
+    @elseif ($step === 2)
+        <form wire:submit="saveKeywords" class="card card-pad space-y-5">
+            <div>
+                <label for="keywords" class="block text-sm font-medium">Anahtar kelimeler</label>
+                <p class="mt-0.5 text-xs text-ink-muted">
+                    Her satıra bir kelime. Arama hacmi ve ilk sıra ölçümü arka planda çekilir. Bu adımı atlayabilirsin.
+                </p>
+                <textarea id="keywords" wire:model="keywords" rows="8" class="field mt-2 font-mono text-xs"
+                          placeholder="etiket baskı&#10;sticker baskı&#10;ürün etiketi"></textarea>
+            </div>
+
+            <div class="flex items-center justify-between border-t border-line pt-4">
+                <button type="button" wire:click="back" class="btn-ghost">Geri</button>
+                <button type="submit" class="btn-primary">Devam et</button>
+            </div>
+        </form>
+
+    @else
+        <div class="card card-pad space-y-5">
+            <div>
+                <h2 class="text-sm font-semibold">Entegrasyonlar</h2>
+                <p class="mt-0.5 text-xs text-ink-muted">Şimdi bağlayabilir ya da sonra Entegrasyonlar ekranından halledebilirsin.</p>
+            </div>
+
+            <div class="grid gap-3 sm:grid-cols-2">
+                <a href="{{ $created ? route('search-console.connect', $created) : '#' }}"
+                   class="card card-pad hover:border-brand-200">
+                    <span class="flex items-center gap-2 text-sm font-medium">
+                        <x-app.icon name="google" class="h-4 w-4 text-ink-muted" /> Search Console
+                    </span>
+                    <span class="mt-1 block text-xs text-ink-muted">Gerçek tıklama ve gösterim verisi.</span>
+                </a>
+
+                <a href="{{ route('integrations') }}" wire:navigate class="card card-pad hover:border-brand-200">
+                    <span class="flex items-center gap-2 text-sm font-medium">
+                        <x-app.icon name="plug" class="h-4 w-4 text-ink-muted" /> WordPress
+                    </span>
+                    <span class="mt-1 block text-xs text-ink-muted">Hataları doğrudan sitede düzeltmek için.</span>
+                </a>
+            </div>
+
+            <label class="flex items-start gap-3 rounded-lg border border-line bg-canvas p-4">
+                <input type="checkbox" wire:model="startCrawl"
+                       class="mt-0.5 rounded border-line text-brand-500 focus:ring-brand-400">
+                <span>
+                    <span class="block text-sm font-medium">İlk taramayı hemen başlat</span>
+                    <span class="block text-xs text-ink-muted">Panele döndüğünde ilerlemeyi üst barda görürsün.</span>
+                </span>
+            </label>
+
+            <div class="flex items-center justify-between border-t border-line pt-4">
+                <button type="button" wire:click="back" class="btn-ghost">Geri</button>
+                <button wire:click="finish" class="btn-primary" wire:loading.attr="disabled">Kurulumu bitir</button>
+            </div>
+        </div>
+    @endif
 </div>

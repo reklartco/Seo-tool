@@ -70,13 +70,46 @@ database/
   seeders/               -- PlanSeeder (§9 plan matrisi), DemoSeeder
 ```
 
+## Modüller
+
+| Modül | Durum | Öne çıkanlar |
+|---|---|---|
+| Site tarama | ✓ | Guzzle crawler, robots + sitemap keşfi, 35 sayfa kuralı + 13 site kuralı, sağlık skoru, tarama diff'i |
+| Anahtar kelime | ✓ | `RankProvider` arayüzü (DataForSEO), gecelik sıra takibi, 90 günlük grafik, ilk 10 rakip |
+| Search Console | ✓ | OAuth2, günlük eşitleme, sorgu/sayfa tabloları, fırsat kelimeler |
+| WordPress + AI | ✓ | HMAC imzalı `seo-connector` eklentisi, Claude ile title/description/alt üretimi, onay akışı, geri alma |
+| Admin | ✓ | Takım/plan yönetimi, kullanım sayaçları, tahmini API maliyeti |
+
+### Kuyruklar
+
+`crawl` (tarama), `serp` (sıra ve hacim), `ai` (üretim ve uygulama), `default`.
+Horizon `config/horizon.php` üzerinden bu kuyrukları işler.
+
+### Zamanlanmış işler
+
+| Saat | İş |
+|---|---|
+| 03:00 | Tüm projelerin kelimeleri için SERP sorgusu |
+| 05:00 | Search Console eşitlemesi |
+| saatlik | `seo:crawl-due` — tarama sıklığı dolan projeler |
+
+## WordPress eklentisi
+
+`wordpress-plugin/seo-connector/` altında. Panelde Entegrasyonlar ekranından
+zip olarak indirilir. Panel ile eklenti arasındaki her istek HMAC-SHA256 ile
+imzalanır (method + yol + zaman damgası + gövde özeti, 5 dakikalık pencere).
+Eklenti Yoast ve Rank Math meta anahtarlarını tanır, ikisi de yoksa kendi
+anahtarlarını kullanıp `wp_head` çıktısını kendisi verir. Değiştirdiği her
+alanın eski değerini kendi tablosunda saklar, böylece panelden geri alınabilir.
+
 ## Sprint durumu
 
-- [x] **Sprint 0** — iskelet: tenant/plan/limit katmanı, tüm migration'lar,
-      modeller, sidebar layout + açık tema, proje oluşturma, `Rule` arayüzü
-      ve ilk 5 kural (testleriyle).
-- [ ] Sprint 1 — Crawler + kural motorunun tamamı (~40 kural)
-- [ ] Sprint 2 — DataForSEO sıra takibi
-- [ ] Sprint 3 — Search Console
-- [ ] Sprint 4 — WordPress connector + AI düzeltme
-- [ ] Sprint 5 — Dashboard cilası, bildirimler, admin paneli
+- [x] Sprint 0 — iskelet, tenant/plan katmanı, şema, açık tema panel
+- [x] Sprint 1 — crawler + kural motoru, Hatalar / Sayfalar / Tarama Geçmişi
+- [x] Sprint 2 — DataForSEO sıra takibi, kelime kartları ve detay grafiği
+- [x] Sprint 3 — Search Console, fırsat kelimeler
+- [x] Sprint 4 — WordPress connector + AI düzeltme
+- [x] Sprint 5 — dashboard cilası, bildirimler, admin paneli, sihirbaz
+
+v2 için bekleyenler (spec §1): AI blog üretici, uptime monitör, rakip analizi,
+backlink, AI bot takibi, Pixel, mobil uygulama, Chrome eklentisi, MCP server.

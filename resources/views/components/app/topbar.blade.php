@@ -16,6 +16,8 @@
     <div class="ml-auto flex items-center gap-2">
         <livewire:crawl-control />
 
+        <livewire:notification-bell />
+
         <div x-data="{ open: false }" class="relative">
             <button @click="open = !open"
                     class="grid h-9 w-9 place-items-center rounded-full bg-canvas text-sm font-semibold text-ink-muted ring-1 ring-line">
