@@ -36,14 +36,14 @@
                         <button wire:click="$set('view', 'table')"
                                 class="rounded-md px-2.5 py-1 text-xs font-medium {{ $view === 'table' ? 'bg-canvas text-ink' : 'text-ink-faint' }}">Tablo</button>
                     </div>
-                    <button type="button" class="btn-primary">
+                    <button type="button" wire:click="$toggle('showAdd')" class="btn-primary">
                         <x-app.icon name="plus" class="h-4 w-4" /> Kelime ekle
                     </button>
                 </div>
             </div>
 
             <div class="mt-4 flex flex-wrap gap-2 border-t border-line pt-4">
-                @foreach (['all' => 'Tümü', 'up' => 'Yükselenler', 'down' => 'Düşenler', 'top10' => 'İlk 10'] as $key => $label)
+                @foreach (['all' => 'Tümü', 'up' => 'Yükselenler', 'down' => 'Düşenler', 'top10' => 'İlk 10', 'lost' => 'İlk 100 dışı'] as $key => $label)
                     <button wire:click="$set('filter', '{{ $key }}')"
                             class="{{ $filter === $key ? 'chip-brand' : 'chip-neutral' }}">{{ $label }}</button>
                 @endforeach
@@ -55,6 +55,30 @@
             </div>
         </div>
 
+        @if ($showAdd)
+            <form wire:submit="addKeywords" class="card card-pad space-y-4">
+                <div>
+                    <label for="bulk" class="block text-sm font-medium">Anahtar kelimeler</label>
+                    <p class="mt-0.5 text-xs text-ink-muted">Her satıra bir kelime yaz. Hacim ve sıra verisi arka planda çekilir.</p>
+                    <textarea id="bulk" wire:model="bulk" rows="6" class="field mt-2 font-mono text-xs"
+                              placeholder="etiket baskı&#10;sticker baskı&#10;ürün etiketi"></textarea>
+                    @error('bulk') <p class="mt-1.5 text-xs text-down">{{ $message }}</p> @enderror
+                </div>
+
+                <div class="flex flex-wrap items-end gap-3">
+                    <div class="w-48">
+                        <label for="newTag" class="block text-sm font-medium">Etiket (opsiyonel)</label>
+                        <input id="newTag" type="text" wire:model="newTag" class="field mt-1.5" placeholder="Baskı">
+                    </div>
+
+                    <div class="ml-auto flex gap-2">
+                        <button type="button" wire:click="$set('showAdd', false)" class="btn-ghost">Vazgeç</button>
+                        <button type="submit" class="btn-primary" wire:loading.attr="disabled">Ekle</button>
+                    </div>
+                </div>
+            </form>
+        @endif
+
         @if ($keywords->isEmpty())
             <x-app.empty-state
                 title="Bu filtrede kelime yok"
@@ -62,9 +86,20 @@
         @elseif ($view === 'grid')
             <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 @foreach ($keywords as $keyword)
-                    <article class="card card-pad">
+                    <article wire:key="kw-{{ $keyword->id }}" class="card card-pad group relative">
+                        <div class="absolute right-3 top-3 hidden gap-1 group-hover:flex">
+                            <button wire:click="refreshKeyword({{ $keyword->id }})" title="Sırayı yenile"
+                                    class="rounded-md p-1 text-ink-faint hover:bg-canvas hover:text-ink">
+                                <x-app.icon name="refresh" class="h-3.5 w-3.5" />
+                            </button>
+                            <button wire:click="deleteKeyword({{ $keyword->id }})"
+                                    wire:confirm="Bu kelimeyi takipten çıkaralım mı?" title="Sil"
+                                    class="rounded-md p-1 text-ink-faint hover:bg-canvas hover:text-down">✕</button>
+                        </div>
+
                         <div class="flex items-start gap-2">
-                            <h3 class="min-w-0 flex-1 truncate text-[15px] font-semibold">{{ $keyword->keyword }}</h3>
+                            <button wire:click="showDetail({{ $keyword->id }})"
+                                    class="min-w-0 flex-1 truncate text-left text-[15px] font-semibold hover:text-brand-600">{{ $keyword->keyword }}</button>
                             @if ($keyword->tag)
                                 <span class="chip-brand shrink-0">{{ $keyword->tag }}</span>
                             @endif
@@ -129,7 +164,7 @@
                     </thead>
                     <tbody class="divide-y divide-line">
                         @foreach ($keywords as $keyword)
-                            <tr class="hover:bg-canvas">
+                            <tr wire:key="kwrow-{{ $keyword->id }}" wire:click="showDetail({{ $keyword->id }})" class="cursor-pointer hover:bg-canvas">
                                 <td class="px-5 py-3 font-medium">{{ $keyword->keyword }}</td>
                                 <td class="px-5 py-3 text-ink-muted">{{ $keyword->tag ?? '—' }}</td>
                                 <td class="px-5 py-3 font-semibold">#{{ $keyword->current_rank ?? '100+' }}</td>
@@ -144,6 +179,86 @@
                         @endforeach
                     </tbody>
                 </table>
+            </div>
+        @endif
+
+        @if ($detail)
+            <div class="fixed inset-0 z-40 flex justify-end">
+                <div class="absolute inset-0 bg-ink/20" wire:click="closeDetail"></div>
+
+                <aside class="relative z-10 flex w-full max-w-lg flex-col overflow-y-auto border-l border-line bg-surface shadow-pop">
+                    <div class="flex items-start gap-3 border-b border-line px-5 py-4">
+                        <div class="min-w-0 flex-1">
+                            <h2 class="truncate text-base font-semibold">{{ $detail->keyword }}</h2>
+                            <p class="mt-0.5 text-xs text-ink-muted">
+                                {{ $detail->search_volume ? '~'.number_format($detail->search_volume, 0, ',', '.').' arama/ay' : 'Hacim verisi yok' }}
+                                @if ($detail->cpc) · CPC ₺{{ number_format((float) $detail->cpc, 2, ',', '.') }} @endif
+                                @if ($detail->last_checked_at) · {{ $detail->last_checked_at->diffForHumans() }} @endif
+                            </p>
+                        </div>
+                        <button wire:click="closeDetail" class="text-ink-faint hover:text-ink">✕</button>
+                    </div>
+
+                    <div class="space-y-6 px-5 py-5">
+                        <div class="flex items-center gap-4">
+                            <div>
+                                <p class="stat-label">Güncel</p>
+                                <p class="text-3xl font-bold">#{{ $detail->current_rank ?? '100+' }}</p>
+                            </div>
+                            <div>
+                                <p class="stat-label">En iyi</p>
+                                <p class="text-xl font-semibold">#{{ $detail->best_rank ?? '—' }}</p>
+                            </div>
+                            <div>
+                                <p class="stat-label">Başlangıç</p>
+                                <p class="text-xl font-semibold">#{{ $detail->start_rank ?? '—' }}</p>
+                            </div>
+                            @if ($detail->rank_delta !== 0)
+                                <span class="{{ $detail->rank_delta > 0 ? 'chip-up' : 'chip-down' }} ml-auto">
+                                    {{ $detail->rank_delta > 0 ? '+' : '' }}{{ $detail->rank_delta }} sıra
+                                </span>
+                            @endif
+                        </div>
+
+                        <div>
+                            <p class="mb-3 text-sm font-semibold">Son 90 gün</p>
+                            <x-app.rank-chart :history="$history" />
+                        </div>
+
+                        @if ($detail->serp_url)
+                            <div>
+                                <p class="mb-1 text-sm font-semibold">Sıralanan sayfa</p>
+                                <a href="{{ $detail->serp_url }}" target="_blank" rel="noopener"
+                                   class="block truncate text-xs text-brand-600">{{ $detail->serp_url }}</a>
+                            </div>
+                        @endif
+
+                        <div>
+                            <p class="mb-2 text-sm font-semibold">İlk 10 rakip</p>
+                            @if ($competitors->isEmpty())
+                                <p class="text-xs text-ink-faint">Henüz SERP verisi çekilmedi.</p>
+                            @else
+                                <ol class="divide-y divide-line rounded-lg border border-line">
+                                    @foreach ($competitors as $row)
+                                        <li class="flex items-center gap-3 px-3 py-2 text-xs">
+                                            <span class="w-5 shrink-0 font-semibold text-ink-faint">{{ $row->position }}</span>
+                                            <span class="min-w-0 flex-1">
+                                                <span class="block truncate font-medium">{{ $row->domain }}</span>
+                                                <span class="block truncate text-ink-faint">{{ $row->title }}</span>
+                                            </span>
+                                        </li>
+                                    @endforeach
+                                </ol>
+                            @endif
+                        </div>
+
+                        <div class="flex gap-2 border-t border-line pt-4">
+                            <button wire:click="refreshKeyword({{ $detail->id }})" class="btn-ghost">Sırayı yenile</button>
+                            <button wire:click="deleteKeyword({{ $detail->id }})"
+                                    wire:confirm="Bu kelimeyi takipten çıkaralım mı?" class="btn-ghost text-down">Takipten çıkar</button>
+                        </div>
+                    </div>
+                </aside>
             </div>
         @endif
     @endif
