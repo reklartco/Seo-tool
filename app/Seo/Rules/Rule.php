@@ -17,6 +17,12 @@ interface Rule
     public function severity(): string;
 
     /**
+     * Whether this rule has anything to say about this page at all.
+     * Content and meta rules stay quiet on error pages.
+     */
+    public function appliesTo(PageContext $ctx): bool;
+
+    /**
      * Return one or more issues, or an empty array when the page passes.
      *
      * @return list<IssueResult>

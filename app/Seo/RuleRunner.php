@@ -45,6 +45,10 @@ class RuleRunner
         $issues = [];
 
         foreach ($this->rules as $rule) {
+            if (! $rule->appliesTo($ctx)) {
+                continue;
+            }
+
             foreach ($rule->check($ctx) as $issue) {
                 $issues[] = $issue;
             }

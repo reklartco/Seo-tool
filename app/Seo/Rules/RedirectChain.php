@@ -23,6 +23,11 @@ class RedirectChain extends BaseRule
         return 'warning';
     }
 
+    public function appliesTo(PageContext $ctx): bool
+    {
+        return true;
+    }
+
     public function check(PageContext $ctx): array
     {
         if ($ctx->redirectHops <= self::MAX_HOPS) {

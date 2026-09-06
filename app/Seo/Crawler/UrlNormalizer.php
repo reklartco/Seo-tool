@@ -104,7 +104,10 @@ class UrlNormalizer
     public static function sameSite(string $url, string $domain): bool
     {
         $host = self::host($url);
+
+        // The project domain may carry a port (local testing); hosts never do.
         $domain = preg_replace('/^www\./i', '', mb_strtolower($domain));
+        $domain = explode(':', $domain)[0];
 
         return $host !== null && ($host === $domain || str_ends_with($host, '.'.$domain));
     }

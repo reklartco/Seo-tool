@@ -5,6 +5,7 @@ use App\Seo\RuleRunner;
 use App\Seo\Rules\H1Missing;
 use App\Seo\Rules\ImgAltMissing;
 use App\Seo\Rules\MetaDescMissing;
+use App\Seo\Rules\Status4xx;
 use App\Seo\Rules\TitleMissing;
 use App\Seo\Rules\TitleTooLong;
 
@@ -91,12 +92,32 @@ it('collects issues from every registered rule', function () {
         ->toBe(['title_missing', 'meta_desc_missing', 'h1_missing']);
 });
 
-it('returns no issues for a healthy page', function () {
-    $runner = app(RuleRunner::class);
+it('reports nothing on a page that satisfies every rule', function () {
+    $body = str_repeat('Etiket baskı hizmeti hakkında ayrıntılı bilgi. ', 80);
 
-    $html = '<html><head><title>Etiket Baskı | 1etiket</title>'
-        .'<meta name="description" content="Kaliteli etiket baskı hizmeti, hızlı teslimat."></head>'
-        .'<body><h1>Etiket Baskı</h1><img src="/a.jpg" alt="etiket"></body></html>';
+    $html = '<!doctype html><html lang="tr"><head>'
+        .'<title>Etiket Baskı ve Sticker Üretimi | 1etiket</title>'
+        .'<meta name="description" content="Kaliteli etiket ve sticker baskısı, hızlı teslimat ve uygun fiyatlarla. Hemen teklif alın, üretimi bugün başlatalım.">'
+        .'<meta name="viewport" content="width=device-width, initial-scale=1">'
+        .'<link rel="canonical" href="https://example.test/">'
+        .'<meta property="og:title" content="Etiket Baskı"><meta property="og:image" content="/a.png">'
+        .'<meta name="twitter:card" content="summary">'
+        .'<script type="application/ld+json">{"@type":"Organization"}</script></head>'
+        .'<body><h1>Etiket Baskı</h1><h2>Fiyatlar</h2><p>'.$body.'</p>'
+        .'<img src="/a.jpg" alt="etiket" width="80" height="80">'
+        .'<a href="/sticker">Sticker baskı fiyatları</a></body></html>';
 
-    expect($runner->run(ctx($html)))->toBeEmpty();
+    expect(app(RuleRunner::class)->run(ctx($html)))->toBeEmpty();
+});
+
+it('keeps content rules quiet on an error page', function () {
+    $ctx = new PageContext(url: 'https://ornek.test/yok', html: '<html><body>404</body></html>', statusCode: 404);
+
+    expect((new TitleMissing)->appliesTo($ctx))->toBeFalse()
+        ->and((new MetaDescMissing)->appliesTo($ctx))->toBeFalse()
+        ->and((new Status4xx)->appliesTo($ctx))->toBeTrue();
+
+    $issues = app(RuleRunner::class)->run($ctx);
+
+    expect(array_map(fn ($i) => $i->ruleKey, $issues))->toBe(['status_4xx']);
 });

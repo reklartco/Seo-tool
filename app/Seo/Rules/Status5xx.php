@@ -21,6 +21,11 @@ class Status5xx extends BaseRule
         return 'critical';
     }
 
+    public function appliesTo(PageContext $ctx): bool
+    {
+        return true;
+    }
+
     public function check(PageContext $ctx): array
     {
         if ($ctx->statusCode < 500) {
