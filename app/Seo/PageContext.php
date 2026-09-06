@@ -2,20 +2,22 @@
 
 namespace App\Seo;
 
-use Symfony\Component\DomCrawler\Crawler;
+use App\Seo\Crawler\PageParser;
+use App\Seo\Crawler\UrlNormalizer;
 
 /**
  * Everything a rule needs to judge a single crawled page.
  *
- * The crawler instance is lazily built from the raw HTML so rules that only
- * look at scalar values (status code, word count) never pay for parsing.
+ * The crawler hands over an already parsed payload; when a rule is exercised
+ * with raw HTML (tests, one-off checks) the payload is parsed on demand.
  */
 class PageContext
 {
-    private ?Crawler $crawler = null;
+    /** @var array<string, mixed>|null */
+    private ?array $parsed = null;
 
     /**
-     * @param  array<string, mixed>  $meta
+     * @param  array<string, mixed>  $meta  Parsed payload from PageParser.
      * @param  list<string>  $projectKeywords
      */
     public function __construct(
@@ -27,107 +29,169 @@ class PageContext
         public readonly int $loadTimeMs = 0,
         public readonly int $depth = 0,
         public readonly array $projectKeywords = [],
+        public readonly int $redirectHops = 0,
+        public readonly string $domain = '',
+        public readonly string $cms = 'custom',
+        public readonly ?string $contentType = 'text/html',
+        public readonly ?string $error = null,
     ) {}
 
-    public function crawler(): Crawler
+    /**
+     * @return array<string, mixed>
+     */
+    public function parsed(): array
     {
-        return $this->crawler ??= new Crawler($this->html, $this->url);
+        if ($this->parsed !== null) {
+            return $this->parsed;
+        }
+
+        if ($this->meta !== []) {
+            return $this->parsed = $this->meta;
+        }
+
+        return $this->parsed = $this->html === ''
+            ? []
+            : (new PageParser)->parse($this->html, $this->url);
+    }
+
+    public function get(string $key, mixed $default = null): mixed
+    {
+        return $this->parsed()[$key] ?? $default;
     }
 
     public function title(): ?string
     {
-        return $this->text('title') ?? $this->firstNodeText('title');
+        return $this->get('title');
     }
 
     public function metaDescription(): ?string
     {
-        return $this->text('meta_description') ?? $this->metaContent('description');
+        return $this->get('meta_description');
     }
 
     public function h1(): ?string
     {
-        return $this->text('h1') ?? $this->firstNodeText('h1');
+        return $this->get('h1');
     }
 
     public function h1Count(): int
     {
-        return isset($this->meta['h1_count'])
-            ? (int) $this->meta['h1_count']
-            : $this->crawler()->filter('h1')->count();
+        return (int) $this->get('h1_count', 0);
     }
 
     public function canonical(): ?string
     {
-        if (isset($this->meta['canonical'])) {
-            return $this->normalize((string) $this->meta['canonical']);
-        }
+        return $this->get('canonical');
+    }
 
-        $node = $this->crawler()->filter('link[rel="canonical"]');
+    public function robotsMeta(): ?string
+    {
+        return $this->get('robots_meta');
+    }
 
-        return $node->count() ? $this->normalize($node->attr('href') ?? '') : null;
+    public function isIndexable(): bool
+    {
+        return ! str_contains(mb_strtolower($this->robotsMeta() ?? ''), 'noindex');
+    }
+
+    public function lang(): ?string
+    {
+        return $this->get('lang');
+    }
+
+    public function viewport(): ?string
+    {
+        return $this->get('viewport');
+    }
+
+    public function words(): int
+    {
+        return $this->wordCount ?: (int) $this->get('word_count', 0);
+    }
+
+    public function htmlSize(): int
+    {
+        return (int) $this->get('html_size', strlen($this->html));
+    }
+
+    public function contentHash(): ?string
+    {
+        return $this->get('content_hash');
+    }
+
+    public function text(): string
+    {
+        return (string) $this->get('text', '');
     }
 
     /**
-     * Images with their alt attribute, as ['src' => 'alt|null'].
-     *
-     * @return array<string, string|null>
+     * @return list<array{level: int, text: string}>
+     */
+    public function headings(): array
+    {
+        return $this->get('headings', []);
+    }
+
+    /**
+     * @return list<array{src: string, alt: string|null, width: string|null, height: string|null}>
      */
     public function images(): array
     {
-        if (isset($this->meta['images']) && is_array($this->meta['images'])) {
-            return $this->meta['images'];
-        }
-
-        if ($this->html === '') {
-            return [];
-        }
-
-        $images = [];
-
-        foreach ($this->crawler()->filter('img') as $node) {
-            $src = $node->getAttribute('src');
-
-            if ($src === '') {
-                continue;
-            }
-
-            $images[$src] = $node->hasAttribute('alt') ? $node->getAttribute('alt') : null;
-        }
-
-        return $images;
+        return $this->get('images', []);
     }
 
-    private function text(string $key): ?string
+    /**
+     * @return list<array{url: string, anchor: string, nofollow: bool}>
+     */
+    public function links(): array
     {
-        return $this->normalize((string) ($this->meta[$key] ?? ''));
+        return $this->get('links', []);
     }
 
-    private function firstNodeText(string $selector): ?string
+    /**
+     * @return list<array{url: string, anchor: string, nofollow: bool}>
+     */
+    public function internalLinks(): array
     {
-        if ($this->html === '') {
-            return null;
-        }
+        $domain = $this->domain ?: (parse_url($this->url, PHP_URL_HOST) ?? '');
 
-        $node = $this->crawler()->filter($selector);
-
-        return $node->count() ? $this->normalize($node->first()->text('')) : null;
+        return array_values(array_filter(
+            $this->links(),
+            fn (array $link) => UrlNormalizer::sameSite($link['url'], $domain),
+        ));
     }
 
-    private function metaContent(string $name): ?string
+    /**
+     * @return list<string>
+     */
+    public function resources(): array
     {
-        if ($this->html === '') {
-            return null;
-        }
-
-        $node = $this->crawler()->filter('meta[name="'.$name.'"]');
-
-        return $node->count() ? $this->normalize($node->attr('content') ?? '') : null;
+        return $this->get('resources', []);
     }
 
-    private function normalize(string $value): ?string
+    /**
+     * @return array<string, string|null>
+     */
+    public function openGraph(): array
     {
-        $value = trim(preg_replace('/\s+/u', ' ', $value) ?? '');
+        return $this->get('og', []);
+    }
 
-        return $value === '' ? null : $value;
+    public function twitterCard(): ?string
+    {
+        return $this->get('twitter_card');
+    }
+
+    /**
+     * @return array{blocks: int, invalid: int, types: list<string>}
+     */
+    public function schema(): array
+    {
+        return $this->get('schema', ['blocks' => 0, 'invalid' => 0, 'types' => []]);
+    }
+
+    public function isHttps(): bool
+    {
+        return str_starts_with(mb_strtolower($this->url), 'https://');
     }
 }

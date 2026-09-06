@@ -18,6 +18,7 @@ class Crawl extends Model
         return [
             'started_at' => 'datetime',
             'finished_at' => 'datetime',
+            'robots' => 'array',
         ];
     }
 

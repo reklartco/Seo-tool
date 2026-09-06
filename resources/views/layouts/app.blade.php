@@ -30,6 +30,8 @@
             </div>
         </div>
 
+        <x-app.toasts />
+
         @livewireScripts
     </body>
 </html>

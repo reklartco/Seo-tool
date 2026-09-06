@@ -17,6 +17,7 @@ class IssueResult
         public readonly string $category,
         public readonly string $message,
         public readonly array $details = [],
+        public readonly ?int $pageId = null,
     ) {}
 
     /**
@@ -30,6 +31,7 @@ class IssueResult
             'category' => $this->category,
             'message' => $this->message,
             'details' => $this->details,
+            'page_id' => $this->pageId,
         ];
     }
 }

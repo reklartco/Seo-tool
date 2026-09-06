@@ -4,11 +4,13 @@ namespace App\Seo\Rules;
 
 use App\Seo\PageContext;
 
-class ImgAltMissing extends BaseRule
+class ImgTooLarge extends BaseRule
 {
+    public const MAX_BYTES = 307200; // 300 KB
+
     public function key(): string
     {
-        return 'img_alt_missing';
+        return 'img_too_large';
     }
 
     public function category(): string
@@ -26,13 +28,16 @@ class ImgAltMissing extends BaseRule
         $issues = [];
 
         foreach ($ctx->images() as $image) {
-            if ($image['alt'] !== null) {
+            $bytes = (int) ($image['bytes'] ?? 0);
+
+            if ($bytes <= self::MAX_BYTES) {
                 continue;
             }
 
-            $issues[] = $this->issue('Görselde alt metni yok.', [
+            $issues[] = $this->issue('Görsel '.round($bytes / 1024).' KB, çok büyük.', [
                 'src' => $image['src'],
-                'expected' => 'Görseli tarif eden, anahtar kelime içeren alt metni',
+                'bytes' => $bytes,
+                'expected' => 'En fazla 300 KB (WebP önerilir)',
             ]);
         }
 

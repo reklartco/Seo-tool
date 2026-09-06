@@ -14,12 +14,7 @@
     </div>
 
     <div class="ml-auto flex items-center gap-2">
-        @if ($current)
-            <button type="button" class="btn-primary hidden sm:inline-flex">
-                <x-app.icon name="refresh" class="h-4 w-4" />
-                Tara
-            </button>
-        @endif
+        <livewire:crawl-control />
 
         <div x-data="{ open: false }" class="relative">
             <button @click="open = !open"

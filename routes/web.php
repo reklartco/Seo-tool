@@ -1,8 +1,10 @@
 <?php
 
+use App\Livewire\Crawls\Index as CrawlsIndex;
 use App\Livewire\Dashboard;
 use App\Livewire\Issues\Index as IssuesIndex;
 use App\Livewire\Keywords\Index as KeywordsIndex;
+use App\Livewire\Pages\Index as PagesIndex;
 use App\Livewire\Projects\Create as ProjectCreate;
 use App\Models\Project;
 use Illuminate\Http\Request;
@@ -27,16 +29,8 @@ Route::middleware(['auth', 'verified', 'team'])->group(function () {
     Route::get('hatalar', IssuesIndex::class)->name('issues');
     Route::get('anahtar-kelimeler', KeywordsIndex::class)->name('keywords');
 
-    // Screens landing in later sprints (spec §10).
-    Route::view('sayfalar', 'placeholder', [
-        'title' => 'Sayfalar',
-        'description' => 'Taranan sayfa listesi Sprint 1 ile birlikte gelir.',
-    ])->name('pages');
-
-    Route::view('tarama-gecmisi', 'placeholder', [
-        'title' => 'Tarama Geçmişi',
-        'description' => 'Tarama koşuları ve karşılaştırmaları Sprint 1 ile birlikte gelir.',
-    ])->name('crawls');
+    Route::get('sayfalar', PagesIndex::class)->name('pages');
+    Route::get('tarama-gecmisi', CrawlsIndex::class)->name('crawls');
 
     Route::view('search-console', 'placeholder', [
         'title' => 'Search Console',

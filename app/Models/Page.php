@@ -18,6 +18,8 @@ class Page extends Model
         return [
             'first_seen_at' => 'datetime',
             'last_crawled_at' => 'datetime',
+            'in_sitemap' => 'boolean',
+            'indexable' => 'boolean',
         ];
     }
 
