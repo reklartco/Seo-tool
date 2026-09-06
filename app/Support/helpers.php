@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\Project;
+use App\Models\WpConnection;
+use Illuminate\Support\Facades\Crypt;
 
 if (! function_exists('current_project')) {
     /**
@@ -40,5 +42,16 @@ if (! function_exists('rule_label')) {
     function rule_label(string $ruleKey, ?string $fallback = null): string
     {
         return config("seo.rule_labels.{$ruleKey}") ?? $fallback ?? $ruleKey;
+    }
+}
+
+if (! function_exists('decrypt_wp_key')) {
+    /**
+     * The plugin API key is stored hashed for verification and encrypted for
+     * outbound calls; this returns the usable secret.
+     */
+    function decrypt_wp_key(WpConnection $connection): string
+    {
+        return Crypt::decryptString($connection->api_key_hash);
     }
 }

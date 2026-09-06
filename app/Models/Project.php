@@ -20,6 +20,7 @@ class Project extends Model
             'last_crawled_at' => 'datetime',
             'gsc_connected_at' => 'datetime',
             'wp_connected_at' => 'datetime',
+            'auto_apply_fixes' => 'boolean',
         ];
     }
 

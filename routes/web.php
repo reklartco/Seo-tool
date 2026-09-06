@@ -1,12 +1,16 @@
 <?php
 
+use App\Http\Controllers\PluginDownloadController;
 use App\Http\Controllers\SearchConsoleController;
 use App\Livewire\Crawls\Index as CrawlsIndex;
 use App\Livewire\Dashboard;
+use App\Livewire\Fixes\Index as FixesIndex;
+use App\Livewire\Integrations\Index as IntegrationsIndex;
 use App\Livewire\Issues\Index as IssuesIndex;
 use App\Livewire\Keywords\Index as KeywordsIndex;
 use App\Livewire\Pages\Index as PagesIndex;
 use App\Livewire\Projects\Create as ProjectCreate;
+use App\Livewire\Projects\Settings as ProjectSettings;
 use App\Livewire\SearchConsole\Index as SearchConsoleIndex;
 use App\Models\Project;
 use Illuminate\Http\Request;
@@ -41,20 +45,10 @@ Route::middleware(['auth', 'verified', 'team'])->group(function () {
     Route::get('entegrasyonlar/search-console/callback', [SearchConsoleController::class, 'callback'])
         ->name('search-console.callback');
 
-    Route::view('duzeltmeler', 'placeholder', [
-        'title' => 'Düzeltmeler',
-        'description' => 'AI düzeltme akışı Sprint 4 ile birlikte gelir.',
-    ])->name('fixes');
-
-    Route::view('entegrasyonlar', 'placeholder', [
-        'title' => 'Entegrasyonlar',
-        'description' => 'WordPress ve Search Console bağlantıları Sprint 3-4 ile birlikte gelir.',
-    ])->name('integrations');
-
-    Route::view('proje-ayarlari', 'placeholder', [
-        'title' => 'Proje Ayarları',
-        'description' => 'Proje düzenleme ekranı Sprint 1 ile birlikte gelir.',
-    ])->name('project-settings');
+    Route::get('duzeltmeler', FixesIndex::class)->name('fixes');
+    Route::get('entegrasyonlar', IntegrationsIndex::class)->name('integrations');
+    Route::get('entegrasyonlar/eklenti', PluginDownloadController::class)->name('integrations.plugin');
+    Route::get('proje-ayarlari', ProjectSettings::class)->name('project-settings');
 });
 
 Route::view('profile', 'profile')->middleware(['auth'])->name('profile');
