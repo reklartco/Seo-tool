@@ -1,11 +1,13 @@
 <?php
 
+use App\Http\Controllers\SearchConsoleController;
 use App\Livewire\Crawls\Index as CrawlsIndex;
 use App\Livewire\Dashboard;
 use App\Livewire\Issues\Index as IssuesIndex;
 use App\Livewire\Keywords\Index as KeywordsIndex;
 use App\Livewire\Pages\Index as PagesIndex;
 use App\Livewire\Projects\Create as ProjectCreate;
+use App\Livewire\SearchConsole\Index as SearchConsoleIndex;
 use App\Models\Project;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -32,10 +34,12 @@ Route::middleware(['auth', 'verified', 'team'])->group(function () {
     Route::get('sayfalar', PagesIndex::class)->name('pages');
     Route::get('tarama-gecmisi', CrawlsIndex::class)->name('crawls');
 
-    Route::view('search-console', 'placeholder', [
-        'title' => 'Search Console',
-        'description' => 'Google Search Console bağlantısı Sprint 3 ile birlikte gelir.',
-    ])->name('search-console');
+    Route::get('search-console', SearchConsoleIndex::class)->name('search-console');
+
+    Route::get('entegrasyonlar/search-console/{project}/baglan', [SearchConsoleController::class, 'connect'])
+        ->name('search-console.connect');
+    Route::get('entegrasyonlar/search-console/callback', [SearchConsoleController::class, 'callback'])
+        ->name('search-console.callback');
 
     Route::view('duzeltmeler', 'placeholder', [
         'title' => 'Düzeltmeler',

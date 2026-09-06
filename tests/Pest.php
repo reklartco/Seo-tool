@@ -1,5 +1,9 @@
 <?php
 
+use App\Models\Plan;
+use App\Models\Project;
+use App\Models\Team;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -44,7 +48,29 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/**
+ * A user who owns a team on a plan, with that team selected.
+ */
+function memberOfTeam(array $planAttributes = []): User
 {
-    // ..
+    $user = User::factory()->create();
+    $plan = Plan::factory()->create($planAttributes);
+    $team = Team::factory()->create(['owner_id' => $user->id, 'plan_id' => $plan->id]);
+    $team->users()->attach($user, ['role' => 'owner']);
+    $user->forceFill(['current_team_id' => $team->id])->save();
+
+    return $user->refresh();
+}
+
+/**
+ * A project on a fresh team, ready for keyword and integration tests.
+ */
+function projectWithPlan(array $plan = []): Project
+{
+    $user = memberOfTeam($plan);
+
+    return Project::factory()->create([
+        'team_id' => $user->current_team_id,
+        'domain' => 'ornek.com',
+    ]);
 }

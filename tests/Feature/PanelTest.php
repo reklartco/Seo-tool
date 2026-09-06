@@ -1,22 +1,8 @@
 <?php
 
 use App\Livewire\Projects\Create;
-use App\Models\Plan;
 use App\Models\Project;
-use App\Models\Team;
-use App\Models\User;
 use Livewire\Livewire;
-
-function memberOfTeam(array $planAttributes = []): User
-{
-    $user = User::factory()->create();
-    $plan = Plan::factory()->create($planAttributes);
-    $team = Team::factory()->create(['owner_id' => $user->id, 'plan_id' => $plan->id]);
-    $team->users()->attach($user, ['role' => 'owner']);
-    $user->forceFill(['current_team_id' => $team->id])->save();
-
-    return $user->refresh();
-}
 
 it('redirects guests away from the dashboard', function () {
     $this->get(route('dashboard'))->assertRedirect(route('login'));

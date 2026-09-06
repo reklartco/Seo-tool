@@ -4,12 +4,8 @@ use App\Jobs\FetchSerpJob;
 use App\Jobs\FetchVolumeJob;
 use App\Livewire\Keywords\Index;
 use App\Models\Keyword;
-use App\Models\Plan;
-use App\Models\Project;
 use App\Models\RankHistory;
 use App\Models\SerpTop10;
-use App\Models\Team;
-use App\Models\User;
 use App\Notifications\RankChanged;
 use App\Seo\Rank\DataForSeoProvider;
 use App\Seo\Rank\Location;
@@ -20,17 +16,6 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
-
-function projectWithPlan(array $plan = []): Project
-{
-    $user = User::factory()->create();
-    $planModel = Plan::factory()->create($plan);
-    $team = Team::factory()->create(['owner_id' => $user->id, 'plan_id' => $planModel->id]);
-    $team->users()->attach($user, ['role' => 'owner']);
-    $user->forceFill(['current_team_id' => $team->id])->save();
-
-    return Project::factory()->create(['team_id' => $team->id, 'domain' => 'ornek.com']);
-}
 
 it('reads the rank and the top ten out of a dataforseo response', function () {
     Http::fake([
